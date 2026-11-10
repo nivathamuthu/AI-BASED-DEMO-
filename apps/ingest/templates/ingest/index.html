@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Ingest · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>1 · Ingest</h1>
+<p class="muted">Upload a PDF, DOCX, PPTX or text file. The worker runs detect, parse, clean, chunk, enrich, embed and index. The same file hash is not ingested twice.</p>
+
+<form class="card" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p>
+    <input type="file" name="file" accept=".pdf,.docx,.pptx,.txt,.md" required>
+    <input type="text" name="title" placeholder="Title (optional)" maxlength="255">
+    <button type="submit">Upload</button>
+  </p>
+</form>
+
+{% include "ingest/_table.html" %}
+{% endblock %}

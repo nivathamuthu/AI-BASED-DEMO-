@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ rule.key }} · Rules · DocIntel Lab{% endblock %}
+{% block content %}
+<p><a href="{% url 'rules:index' %}">← all rules</a></p>
+<h1>{{ rule.key }} <span class="badge {% if rule.status == 'approved' %}done{% elif rule.status == 'rejected' %}failed{% else %}pending{% endif %}">{{ rule.status }}</span>
+  {% if conflicts %}<span class="badge failed">{{ conflicts|length }} conflict{{ conflicts|length|pluralize }}</span>{% endif %}</h1>
+<p class="muted">{{ rule.citation }} · confidence {{ rule.confidence|floatformat:2 }} · prompt {{ rule.prompt_version }} · extracted by {{ rule.llm_provider }} / <span class="mono">{{ rule.llm_model }}</span></p>
+{% if rule.llm_provider == "mock" %}<ul class="messages"><li class="warning">Extracted by the offline mock, not a model.</li></ul>{% endif %}
+
+<div class="card">
+  <table>
+    <tr><th style="width:110px">Condition</th><td>{{ rule.condition }}</td></tr>
+    <tr><th>Action</th><td>{{ rule.action }}</td></tr>
+    <tr><th>Exception</th><td>{{ rule.exception|default:"none" }}</td></tr>
+    {% if rule.edited %}<tr><th>Original</th><td class="muted">IF {{ rule.original.condition }} THEN {{ rule.original.action }}{% if rule.original.exception %} · exception {{ rule.original.exception }}{% endif %}</td></tr>{% endif %}
+    {% if rule.reviewer_note %}<tr><th>Reviewer note</th><td>{{ rule.reviewer_note }} <span class="muted">({{ rule.reviewed_at }})</span></td></tr>{% endif %}
+    {% if rule.merged_into %}<tr><th>Merged into</th><td><a href="{% url 'rules:detail' rule.merged_into.key %}">{{ rule.merged_into.key }}</a> · {{ rule.merge_reason }}</td></tr>{% endif %}
+  </table>
+</div>
+
+<h2>Source chunk</h2>
+<div class="card">
+  <p class="muted">{{ rule.document.title }}{% if rule.page %} · page {{ rule.page }}{% endif %}{% if rule.section %} · {{ rule.section }}{% endif %} · chunk {{ rule.chunk.ordinal }}</p>
+  <pre class="chunk" style="max-height:none">{{ before }}{% if marked %}<mark>{{ marked }}</mark>{% endif %}{{ after }}</pre>
+  {% if not marked %}<p class="muted">The quote could not be located for highlighting: {{ rule.source_quote }}</p>{% endif %}
+</div>
+
+{% if conflicts %}
+<h2>Conflicts</h2>
+<table>
+  <thead><tr><th>Other rule</th><th>Severity</th><th>Reason</th></tr></thead>
+  <tbody>
+  {% for item in conflicts %}
+    <tr>
+      <td class="mono"><a href="{% url 'rules:detail' item.other.key %}">{{ item.other.key }}</a><br><span class="muted">IF {{ item.other.condition }} THEN {{ item.other.action }}</span><br><span class="tag">{{ item.other.citation }}</span></td>
+      <td><span class="badge {% if item.row.display_severity == 'high' %}failed{% else %}running{% endif %}">{{ item.row.display_label }}</span> <span class="muted">{{ item.row.display_severity }}</span> {{ item.row.kind }}</td>
+      <td>{{ item.row.reason }}<br><span class="muted">judge {{ item.row.llm_provider }} / {{ item.row.llm_model }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if duplicates %}
+<h2>Merged duplicates</h2>
+<ul>{% for duplicate in duplicates %}<li><a class="mono" href="{% url 'rules:detail' duplicate.key %}">{{ duplicate.key }}</a> · {{ duplicate.citation }} · {{ duplicate.merge_reason }}</li>{% endfor %}</ul>
+{% endif %}
+
+<h2>Review</h2>
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+  <form class="card" method="post" action="{% url 'rules:review' rule.key %}">
+    {% csrf_token %}
+    <label>Reviewer note<br><textarea name="note" rows="3" style="width:100%">{{ rule.reviewer_note }}</textarea></label>
+    <p><button type="submit" name="action" value="approve">Approve</button>
+       <button type="submit" name="action" value="reject" style="background:var(--bad)">Reject</button></p>
+  </form>
+  <form class="card" method="post" action="{% url 'rules:review' rule.key %}">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="edit">
+    <label>Condition<br><textarea name="condition" rows="2" style="width:100%" required>{{ rule.condition }}</textarea></label>
+    <label>Action<br><textarea name="action_text" rows="2" style="width:100%" required>{{ rule.action }}</textarea></label>
+    <label>Exception<br><textarea name="exception" rows="2" style="width:100%">{{ rule.exception }}</textarea></label>
+    <label>Note<br><input type="text" name="note" style="width:100%"></label>
+    <p><button type="submit">Save edit</button></p>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+# DocIntel Lab. Everything runs here: Django, Celery, Postgres/pgvector, Redis, Neo4j.
+# The repo is bind-mounted into web and worker, so code edits show up without a rebuild.
+
+name: docintel-lab
+
+x-app: &app
+  # One image for web and worker, so a rebuild of either updates both.
+  image: docintel-lab-app
+  build:
+    context: .
+    args:
+      INSTALL_ML: ${INSTALL_ML:-0}
+  env_file: .env
+  environment:
+    # These override .env so the containers always talk to compose services,
+    # even if a copied .env still has a host-style URL.
+    DJANGO_SETTINGS_MODULE: config.settings
+    DATABASE_URL: postgres://${POSTGRES_USER:-docintel}:${POSTGRES_PASSWORD:-docintel}@postgres:5432/${POSTGRES_DB:-docintel}
+    REDIS_URL: redis://redis:6379/0
+    NEO4J_URI: bolt://neo4j:7687
+  volumes:
+    - .:/app
+    # Downloaded embedding / rerank models (EMBEDDINGS_PROVIDER=local), kept across rebuilds.
+    - hfcache:/root/.cache/huggingface
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-docintel}
+      POSTGRES_USER: ${POSTGRES_USER:-docintel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docintel}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docintel} -d ${POSTGRES_DB:-docintel}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  neo4j:
+    image: neo4j:5-community
+    environment:
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-docintel-neo4j}
+      NEO4J_server_memory_heap_max__size: 512M
+      NEO4J_server_memory_pagecache_size: 256M
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    restart: unless-stopped
+
+  web:
+    <<: *app
+    command: python manage.py runserver 0.0.0.0:8000
+    # Host 8000 is often taken by other local apps. The process inside the container still listens on 8000.
+    ports:
+      - "8010:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    # Linux image, so the default prefork pool is correct. Do not use --pool=solo here.
+    command: celery -A config worker --loglevel=info --concurrency=2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  neo4jdata:
+  hfcache:

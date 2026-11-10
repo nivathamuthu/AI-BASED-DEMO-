@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}DocIntel Lab{% endblock %}
+{% block content %}
+<h1>DocIntel Lab</h1>
+<p class="muted">Aviation maintenance documents. Modules 1, 2, 3, 4, 5 and 8 are ready to record.</p>
+<p class="card">LLM <strong>{{ llm.provider }}</strong> / <span class="mono">{{ llm.model }}</span>
+  · embeddings <strong>{{ embeddings.provider }}</strong> / <span class="mono">{{ embeddings.model }}</span>
+  · <a href="{% url 'results' %}">Results</a></p>
+<table>
+  <thead><tr><th></th><th>Module</th><th>What to open</th></tr></thead>
+  <tbody>
+  {% for module in modules %}
+    <tr>
+      <td class="mono">{{ module.n }}</td>
+      <td>{% if module.planned %}<span class="muted">{{ module.name }}</span> <span class="badge pending">planned</span>{% else %}<a href="{% url module.url %}">{{ module.name }}</a>{% endif %}</td>
+      <td>{{ module.line }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

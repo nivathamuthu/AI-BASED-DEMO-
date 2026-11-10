@@ -1,0 +1,19 @@
+- chunk: "IF the brake wear pin is flush, THEN replace the brake before the next flight. Exception: a ferry flight to base is allowed. The hangar has two bays."
+  output:
+    rules:
+      - condition: "the brake wear pin is flush"
+        action: "replace the brake before the next flight"
+        exception: "a ferry flight to base is allowed"
+        source_quote: "IF the brake wear pin is flush, THEN replace the brake before the next flight."
+        confidence: 0.9
+- chunk: "A cracked lens on a cabin reading light may be deferred under the MEL. The cabin was refurbished in 2021."
+  output:
+    rules:
+      - condition: "a cabin reading light has a cracked lens"
+        action: "may be deferred under the MEL"
+        exception: ""
+        source_quote: "A cracked lens on a cabin reading light may be deferred under the MEL."
+        confidence: 0.8
+- chunk: "The planning office meets every Monday to review the fleet."
+  output:
+    rules: []

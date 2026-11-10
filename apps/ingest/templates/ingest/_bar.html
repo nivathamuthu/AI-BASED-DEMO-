@@ -1,0 +1,6 @@
+<div class="bar" title="{{ run.current_stage }}">
+  {% for stage in run.stage_list %}
+    <span class="{{ stage.status }}" style="width: 14.28%"></span>
+  {% endfor %}
+</div>
+<div class="muted">{{ run.current_stage|default:run.status }}</div>

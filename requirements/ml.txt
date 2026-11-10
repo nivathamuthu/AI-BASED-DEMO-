@@ -1,0 +1,6 @@
+# Optional: local embeddings (EMBEDDINGS_MODEL, e.g. BAAI/bge-small-en-v1.5, 384-dim) and cross-encoder rerank.
+# Needed when EMBEDDINGS_PROVIDER=local. The CPU index keeps torch at ~200 MB instead of the CUDA build.
+-r base.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+sentence-transformers==6.2.0
+torch==2.15.0+cpu

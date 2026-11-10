@@ -1,0 +1,17 @@
+- chunk: "AD 2022-11-05 applies to the wide-body fleet. Replace part 12-34567-8 with PN-55-1200 at 8000 flight hours."
+  output:
+    entities:
+      - {name: "AD 2022-11-05", type: Regulation, aliases: []}
+      - {name: "wide-body fleet", type: Aircraft, aliases: []}
+      - {name: "Replacement", type: Task, aliases: ["replace"]}
+      - {name: "12-34567-8", type: Part, aliases: []}
+      - {name: "PN-55-1200", type: Part, aliases: []}
+      - {name: "8000 flight hours", type: Interval, aliases: []}
+    relations:
+      - {source: "AD 2022-11-05", relation: APPLIES_TO, target: "wide-body fleet", evidence_quote: "AD 2022-11-05 applies to the wide-body fleet."}
+      - {source: "PN-55-1200", relation: REPLACES, target: "12-34567-8", evidence_quote: "Replace part 12-34567-8 with PN-55-1200 at 8000 flight hours."}
+      - {source: "Replacement", relation: HAS_INTERVAL, target: "8000 flight hours", evidence_quote: "Replace part 12-34567-8 with PN-55-1200 at 8000 flight hours."}
+- chunk: "The crew rest area was refurbished during the winter."
+  output:
+    entities: []
+    relations: []

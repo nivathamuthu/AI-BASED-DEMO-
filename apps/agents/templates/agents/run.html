@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load rules_display %}
+{% block title %}Agent run {{ run.id }} · DocIntel Lab{% endblock %}
+{% block content %}
+<p><a href="{% url 'agents:index' %}">&larr; Agent</a></p>
+<h1>Run #{{ run.id }}</h1>
+{% include "agents/_backend.html" %}
+<div class="card">
+  <strong>{{ run.question }}</strong><br>
+  <span class="muted">thread <span class="mono">{{ run.thread_id }}</span> · run model {{ run.llm_provider }} / {{ run.llm_model }} · retrieval {{ run.retrieval_mode }}</span>
+</div>
+
+{% if run.status == "awaiting_approval" %}
+<div class="card" style="border-color:var(--run)">
+  <h2 style="margin-top:0">Pending approval</h2>
+  <p class="muted">The graph is paused at <span class="mono">human_approval</span> (a LangGraph interrupt, saved by the Postgres checkpointer). Approve or reject to resume it.</p>
+  {% if run.warning %}<ul class="messages"><li class="warning">{{ run.warning }}</li></ul>{% endif %}
+  {% if run.review.conflicts %}
+  <ul class="messages"><li class="error"><strong>Conflict between applicable rules.</strong>
+    {% for c in run.review.conflicts %}<br>{% if c|deferral_vs_limit %}<span class="badge running">possible conflict · medium</span> {% else %}<span class="badge failed">{{ c.severity }}</span> {% endif %}<span class="mono">{{ c.rule }}</span> ({{ c.rule_citation }}) vs <span class="mono">{{ c.other }}</span> ({{ c.other_citation }}): {{ c.reason }}{% endfor %}</li></ul>
+  {% endif %}
+  {% include "agents/_answer.html" with answer=run.draft %}
+  <p class="muted">Citation check: {% if run.verified %}every claim's quote is in its retrieved source and the judge found it supported.{% else %}failed{% endif %}
+    {% for problem in run.review.problems %}<br>- {{ problem }}{% endfor %}</p>
+  <p class="muted">Sources: {% for s in run.review.sources %}<span class="tag">S{{ s.n }} {{ s.citation }} ({{ s.origin }})</span>{% endfor %}</p>
+  <form method="post" action="{% url 'agents:decide' run.id %}">
+    {% csrf_token %}
+    <p><textarea name="note" rows="2" cols="90" placeholder="Reviewer note (required to reject)"></textarea></p>
+    <button type="submit" name="decision" value="approve">Approve</button>
+    <button type="submit" name="decision" value="reject" style="background:var(--bad)">Reject</button>
+  </form>
+</div>
+{% endif %}
+
+{% if run.final %}
+<div class="card" style="border-color:{% if run.status == 'done' %}var(--ok){% elif run.status == 'refused' %}var(--line){% else %}var(--bad){% endif %}">
+  <h2 style="margin-top:0">Final answer
+    <span class="badge {% if run.status == 'done' %}done{% elif run.status == 'rejected' %}failed{% endif %}">{{ run.get_status_display }}</span></h2>
+  {% if run.final.warning %}<ul class="messages"><li class="warning">{{ run.final.warning }}</li></ul>{% endif %}
+  {% if run.final.conflicts %}
+  <ul class="messages"><li class="error"><strong>Conflict between applicable rules.</strong> The answer does not pick a side:
+    {% for c in run.final.conflicts %}<br>{% if c|deferral_vs_limit %}<span class="badge running">possible conflict · medium</span> {% else %}<span class="badge failed">{{ c.severity }}</span> {% endif %}<span class="mono">{{ c.rule }}</span> ({{ c.rule_citation }}) vs <span class="mono">{{ c.other }}</span> ({{ c.other_citation }}): {{ c.reason }}{% endfor %}</li></ul>
+  {% endif %}
+  <p>{{ run.final.answer }}</p>
+  {% if run.final.conflict_note %}<p class="muted">Conflict note: {{ run.final.conflict_note }}</p>{% endif %}
+  {% if run.final.citations %}
+  <table>
+    <thead><tr><th>#</th><th>Claim</th><th>Quote</th><th>Source (document, page, section)</th><th>Verified</th></tr></thead>
+    <tbody>
+    {% for c in run.final.citations %}
+      <tr><td class="mono">{{ c.n }}</td><td>{{ c.claim }}</td><td><em>"{{ c.quote }}"</em></td>
+        <td><span class="tag">{{ c.document }}</span>{% if c.page %} p.{{ c.page }}{% endif %}{% if c.section %}<div class="muted">§ {{ c.section }}</div>{% endif %}</td>
+        <td>{% if c.verified %}<span class="badge done">yes</span>{% else %}<span class="badge failed">no</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if run.final.approval_note %}<p class="muted">Reviewer note: {{ run.final.approval_note }}</p>{% endif %}
+</div>
+{% endif %}
+
+{% if run.error %}<ul class="messages"><li class="error">{{ run.error }}</li></ul>{% endif %}
+
+<h2>Trace</h2>
+{% include "agents/_trace.html" %}
+{% endblock %}

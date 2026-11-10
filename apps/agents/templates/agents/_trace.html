@@ -1,0 +1,40 @@
+<div id="trace" {% if run.active %}hx-get="{% url 'agents:trace' run.id %}?poll=1" hx-trigger="every 1500ms" hx-swap="outerHTML"{% endif %}>
+  <p class="muted">
+    <span class="badge {% if run.status == 'done' %}done{% elif run.status == 'failed' or run.status == 'rejected' %}failed{% elif run.active or run.status == 'awaiting_approval' %}running{% endif %}">{{ run.get_status_display }}</span>
+    · intent <span class="mono">{{ run.intent|default:"-" }}</span>
+    · loops {{ run.loops }} / {{ max_loops }}
+    · citations verified {% if run.verified is None %}-{% elif run.verified %}yes{% else %}<strong>no</strong>{% endif %}
+    · {{ steps|length }} steps
+    {% if run.active %}· <em>running, refreshing every 1.5 s</em>{% endif %}
+  </p>
+  <table>
+    <thead><tr><th>#</th><th>Node</th><th>Loop</th><th>Status</th><th>ms</th><th>Tool calls</th><th>LLM calls</th><th>Input / output</th></tr></thead>
+    <tbody>
+    {% for step in steps %}
+      <tr>
+        <td class="mono">{{ step.order }}</td>
+        <td class="mono"><strong>{{ step.node }}</strong></td>
+        <td class="mono">{{ step.loop }}</td>
+        <td><span class="badge {% if step.status == 'done' %}done{% elif step.status == 'failed' %}failed{% else %}running{% endif %}">{{ step.status }}</span></td>
+        <td class="mono">{{ step.duration_ms }}</td>
+        <td>{% for call in step.tool_calls %}
+          <div><span class="tag">{{ call.tool }}</span> <span class="mono">{{ call.duration_ms }} ms</span>
+            <details><summary class="muted">args / result</summary><pre class="chunk">{{ call.args }}
+{{ call.result }}</pre></details></div>
+          {% empty %}<span class="muted">-</span>{% endfor %}</td>
+        <td>{% for call in step.llm_calls %}
+          <div class="mono">{{ call.schema }} · {{ call.attempts }} attempt{{ call.attempts|pluralize }} · {{ call.latency_ms }} ms · {{ call.tokens }} tok</div>
+          {% empty %}<span class="muted">-</span>{% endfor %}</td>
+        <td>
+          {% if step.error %}<div class="badge failed">{{ step.error }}</div>{% endif %}
+          {% if step.output.notes %}<div class="muted">{% for key, value in step.output.notes.items %}{{ key }}: {{ value }}<br>{% endfor %}</div>{% endif %}
+          <details><summary class="muted">input</summary><pre class="chunk">{{ step.input_json }}</pre></details>
+          <details><summary class="muted">output</summary><pre class="chunk">{{ step.output_json }}</pre></details>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="8" class="muted">{% if run.active %}Waiting for the worker to start the graph...{% else %}No steps.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

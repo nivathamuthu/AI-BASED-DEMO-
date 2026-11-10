@@ -1,0 +1,16 @@
+.venv/
+.env
+build.log
+generated/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+data/media/
+evals/results/*.md
+data/corpus/public/
+data/corpus/synthetic/*.pdf
+data/corpus/synthetic/*.docx
+data/corpus/synthetic/*.pptx

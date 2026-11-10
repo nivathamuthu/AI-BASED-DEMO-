@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Agent · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>8 · Compliance assistant</h1>
+<p class="muted">A LangGraph agent: classify, plan, hybrid search, graph lookup, rule check, draft with citations, citation check (it loops back to retrieval up to {{ max_loops }} times), then a human approval before the answer is final.</p>
+{% include "agents/_backend.html" %}
+
+<form class="card" method="post">
+  {% csrf_token %}
+  <p><input type="text" name="question" placeholder="Ask a compliance question about the documents" size="95" required></p>
+  <p class="muted">Examples:
+    {% for example in examples %}<br><a href="#" onclick="document.querySelector('input[name=question]').value=this.textContent; return false;">{{ example }}</a>{% endfor %}
+  </p>
+  <button type="submit">Ask the agent</button>
+</form>
+
+{% if latest_eval %}
+<p class="card">Last eval_agent · LLM {{ latest_eval.llm_provider }} / {{ latest_eval.llm_model }} ·
+  intent {{ latest_eval.metrics.intent_correct }}/{{ latest_eval.metrics.cases }} ·
+  answer {{ latest_eval.metrics.answer_correct }}/{{ latest_eval.metrics.cases }} ·
+  citations verified {{ latest_eval.metrics.citations_verified }}/{{ latest_eval.metrics.citation_cases }} ·
+  conflict surfaced {{ latest_eval.metrics.conflict_surfaced }}/{{ latest_eval.metrics.conflict_cases }}</p>
+{% endif %}
+
+<h2>Recent runs</h2>
+<table>
+  <thead><tr><th>Run</th><th>Question</th><th>Intent</th><th>Status</th><th>Loops</th><th>Verified</th><th>Model</th></tr></thead>
+  <tbody>
+  {% for run in runs %}
+    <tr>
+      <td class="mono"><a href="{% url 'agents:run' run.id %}">#{{ run.id }}</a><br><span class="muted">{{ run.source }}</span></td>
+      <td>{{ run.question }}</td>
+      <td class="mono">{{ run.intent }}</td>
+      <td><span class="badge {% if run.status == 'done' %}done{% elif run.status == 'failed' or run.status == 'rejected' %}failed{% elif run.status == 'awaiting_approval' or run.active %}running{% endif %}">{{ run.get_status_display }}</span></td>
+      <td class="mono">{{ run.loops }}</td>
+      <td>{% if run.verified is None %}<span class="muted">-</span>{% elif run.verified %}yes{% else %}<strong>no</strong>{% endif %}</td>
+      <td class="mono">{{ run.llm_provider }} / {{ run.llm_model }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="muted">No runs yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

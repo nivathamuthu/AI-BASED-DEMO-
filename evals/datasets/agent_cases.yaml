@@ -1,0 +1,45 @@
+# Six cases for eval_agent. Written against the four synthetic documents in data/corpus/synthetic.
+#   intent:        the accepted intents (one or more).
+#   answer_all:    every group must match the answer (case-insensitive; "12,000" is read as "12000").
+#                  Each group is a list of alternatives.
+#   expect_conflict: true when the answer must surface the 11500 vs 12000 contradiction,
+#                  false when it must not invent one, omitted when either is acceptable.
+- id: lookup-part
+  kind: lookup
+  question: Which replacement part number goes with AD 2023-14-09 on the side-stay?
+  intent: [lookup]
+  answer_all:
+    - ["77-4418"]
+- id: lookup-inspection
+  kind: lookup
+  question: What inspection does the maintenance planning procedure call for on the side-stay at every C-check?
+  intent: [lookup]
+  answer_all:
+    - ["detailed visual inspection"]
+- id: compliance-mel
+  kind: compliance
+  question: Can the side-stay replacement on part 65-45210-3 be deferred under the MEL?
+  intent: [compliance_check]
+  answer_all:
+    - ["cannot", "can not", "can't", "not be deferred", "not allowed", "not permitted", "no,"]
+- id: compliance-exception
+  kind: compliance
+  question: >-
+    Part 65-45210-3 has passed its replacement limit, the PN-77-4418 bushing is on order, the detailed visual
+    inspection found no crack and AD 2023-07-02 is not open on that gear. May the aircraft keep flying?
+  intent: [compliance_check]
+  answer_all:
+    - ["50 flight hour", "50 fh", "50 hours", "50 flight-hour"]
+- id: conflict-limit
+  kind: conflict
+  question: Part 65-45210-3 is at 11,800 flight hours on a narrow-body aircraft. Is it due for replacement now?
+  intent: [compliance_check, conflict_check]
+  answer_all:
+    - ["11500"]
+    - ["12000"]
+  expect_conflict: true
+- id: out-of-scope
+  kind: out_of_scope
+  question: What is a good recipe for banana bread?
+  intent: [out_of_scope]
+  expect_conflict: false

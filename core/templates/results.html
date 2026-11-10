@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Results · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>Results</h1>
+<p class="muted">The latest saved eval for each module. Provider, model and date come from that EvalRun.</p>
+
+{% for section in sections %}
+<h2>{{ section.title }}</h2>
+{% if not section.run %}
+<p class="card muted">No eval yet.</p>
+{% else %}
+<p class="card">LLM <strong>{{ section.run.llm_provider }}</strong> / <span class="mono">{{ section.run.llm_model }}</span>
+  · embeddings <strong>{{ section.run.embeddings_provider }}</strong> / <span class="mono">{{ section.run.embeddings_model }}</span>
+  · {{ section.run.created_at|date:"Y-m-d H:i" }} UTC
+  {% if section.run.llm_provider == "mock" %}<br><span class="badge failed">mock</span> This run is the offline stand-in, not a model.{% endif %}</p>
+
+{% if section.kind == "prompts" %}
+<p class="muted">v1 mean <strong>{{ section.run.metrics.v1 }}</strong> · v2 mean <strong>{{ section.run.metrics.v2 }}</strong>. Ten fixed samples.</p>
+<table>
+  <thead><tr><th>Sample</th><th>Task</th><th>v1</th><th>v2</th></tr></thead>
+  <tbody>
+  {% for row in section.run.metrics.rows %}
+    <tr>
+      <td class="mono">{{ row.id }}</td>
+      <td class="mono">{{ row.task }}</td>
+      <td><span class="badge {% if row.v1.score %}done{% else %}failed{% endif %}">{{ row.v1.score }}</span></td>
+      <td><span class="badge {% if row.v2.score %}done{% else %}failed{% endif %}">{{ row.v2.score }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif section.kind == "rag" %}
+<p class="muted">hit@5 on {{ section.run.config.questions }} questions. This table does not separate BM25 from hybrid when every mode scores 1.0. A rank check on the same questions, not stored as its own eval, put BM25 and hybrid_rerank together at MRR 0.967.</p>
+<table>
+  <thead><tr><th>Mode</th><th>hit@{{ section.run.config.k }}</th></tr></thead>
+  <tbody>
+  {% for mode, score in section.run.metrics.hit_at_k.items %}
+    <tr><td class="mono">{{ mode }}</td><td class="mono">{{ score }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif section.kind == "kg" %}
+<p class="muted">{{ section.run.config.questions }} questions. The score is the share of expected strings found in the answer. Small sample. Graph {{ section.run.config.graph_backend }} build {{ section.run.config.graph_build_id }}, prompt {{ section.run.config.kg_prompt_version }}. A GraphRAG answer can also name extra entities.</p>
+<table>
+  <thead><tr><th>Question</th><th>Hybrid</th><th>GraphRAG</th></tr></thead>
+  <tbody>
+  {% for row in section.run.metrics.rows %}
+    <tr><td class="mono">{{ row.id }}</td><td class="mono">{{ row.hybrid.score }}</td><td class="mono">{{ row.graphrag.score }}</td></tr>
+  {% endfor %}
+    <tr><td><strong>mean</strong></td><td class="mono"><strong>{{ section.run.metrics.hybrid }}</strong></td><td class="mono"><strong>{{ section.run.metrics.graphrag }}</strong></td></tr>
+  </tbody>
+</table>
+
+{% elif section.kind == "rules" %}
+<p class="muted">{{ section.run.config.gold_rules }} hand-written gold rules. Precision is a lower bound: a correct extraction the gold file leaves out counts against precision.</p>
+<table>
+  <thead><tr><th>Prompt</th><th>Raw</th><th>Dropped</th><th>Kept</th><th>Matched gold</th><th>Precision</th><th>Recall</th></tr></thead>
+  <tbody>
+  {% for version, row in section.run.metrics.items %}
+    <tr>
+      <td class="mono">{{ version }}</td>
+      <td class="mono">{{ row.raw }}</td>
+      <td class="mono">{{ row.dropped }}</td>
+      <td class="mono">{{ row.predicted }}</td>
+      <td class="mono">{{ row.matched }}</td>
+      <td class="mono">{{ row.precision }}</td>
+      <td class="mono">{{ row.recall }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% elif section.kind == "agent" %}
+<p class="muted">{{ section.run.metrics.cases }} cases. Answer correct means the required strings are in the answer. The eval approves every paused run itself. Conflict is scored only where the case expects one. Retrieval {{ section.run.config.retrieval_mode }}, max loops {{ section.run.config.max_loops }}.</p>
+<p class="muted">Totals: intent {{ section.run.metrics.intent_correct }}/{{ section.run.metrics.cases }}
+  · answer {{ section.run.metrics.answer_correct }}/{{ section.run.metrics.cases }}
+  · citations verified {{ section.run.metrics.citations_verified }}/{{ section.run.metrics.citation_cases }}
+  · conflict check {{ section.run.metrics.conflict_surfaced }}/{{ section.run.metrics.conflict_cases }}
+  · loops {{ section.run.metrics.loops_total }}</p>
+<table>
+  <thead><tr><th>Case</th><th>Intent</th><th>Answer</th><th>Citations verified</th><th>Conflict</th><th>Loops</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for row in section.run.metrics.rows %}
+    <tr>
+      <td class="mono">{{ row.id }}</td>
+      <td>{% if row.intent_ok %}yes{% else %}<strong>no</strong>{% endif %} <span class="muted">({{ row.intent }})</span></td>
+      <td>{% if row.answer_ok %}yes{% else %}<strong>no</strong>{% endif %}</td>
+      <td>{% if row.verified is None %}n/a{% elif row.verified %}yes{% else %}<strong>no</strong>{% endif %}</td>
+      <td>{% if row.conflict_ok is None %}{% if row.conflict_surfaced %}yes{% else %}no{% endif %} <span class="muted">(not scored)</span>{% elif row.conflict_ok %}yes{% else %}<strong>no</strong>{% endif %}</td>
+      <td class="mono">{{ row.loops }}</td>
+      <td class="mono">{{ row.status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endblock %}

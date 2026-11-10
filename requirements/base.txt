@@ -1,0 +1,42 @@
+# Exact pins, resolved together with `uv pip compile --python-version 3.11` (Nov 2026).
+# Re-resolve as a set if you bump any of these.
+
+# Web + data
+Django==5.2.19
+django-environ==0.14.0
+django-htmx==1.29.0
+psycopg[binary]==3.3.8
+pgvector==0.5.1
+
+# Async pipeline
+celery[redis]==5.7.0
+redis==8.1.0
+
+# LLM layer
+pydantic==2.14.3
+Jinja2==3.1.6
+PyYAML==6.0.3
+langchain==1.4.9
+langchain-core==1.7.6
+langchain-anthropic==1.7.10
+langchain-openai==1.7.4
+langchain-google-genai==4.4.3
+google-genai==3.0.0
+langgraph==1.2.20
+langgraph-checkpoint-postgres==3.2.0
+
+# Retrieval + graph
+numpy==2.4.6
+rank-bm25==0.2.2
+neo4j==6.4.1
+networkx==3.6.1
+pyvis==0.3.2
+
+# Parsing + corpus generation
+filetype==1.2.0
+pypdf==7.0.0
+python-docx==1.2.0
+python-pptx==1.0.2
+reportlab==5.1.0
+requests==2.34.2
+tiktoken==0.14.0

@@ -1,0 +1,26 @@
+# Multi-hop questions over the synthetic corpus. Each needs at least two linked facts.
+# `expect` strings must all appear in a correct answer.
+- id: k1
+  question: "Which tasks are governed by AD 2023-14-09 for part 65-45210-3?"
+  expect: ["Replacement", "inspection"]
+- id: k2
+  question: "Which intervals apply to the tasks for part 65-45210-3?"
+  expect: ["12000 flight hours", "C-check"]
+- id: k3
+  question: "Which part replaces the part that AD 2023-14-09 applies to?"
+  expect: ["PN-77-4418"]
+- id: k4
+  question: "Which components is part PN-77-4418 part of, through the tasks and directives that name it?"
+  expect: ["bushing", "side-stay"]
+- id: k5
+  question: "Which procedures are linked to the directive that applies to the side-stay?"
+  expect: ["component maintenance manual"]
+- id: k6
+  question: "Which fleet is covered by the directive for part 65-45210-3?"
+  expect: ["narrow-body"]
+- id: k7
+  question: "Which directives apply to the bushing that PN-77-4418 is part of?"
+  expect: ["AD 2023-07-02", "AD 2023-14-09"]
+- id: k8
+  question: "Which intervals apply to the tasks on the bushing?"
+  expect: ["12000 flight hours", "50 flight hours"]

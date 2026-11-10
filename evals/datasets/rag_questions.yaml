@@ -1,0 +1,45 @@
+- id: q1
+  question: "What does AD 2023-14-09 require?"
+  expect: ["AD 2023-14-09"]
+- id: q2
+  question: "Where is PN-77-4418 used?"
+  expect: ["PN-77-4418"]
+- id: q3
+  question: "Which aircraft have part 65-45210-3 installed?"
+  expect: ["65-45210-3"]
+- id: q4
+  question: "What happens at 12000 flight hours?"
+  expect: ["12000"]
+- id: q5
+  question: "How long is the 50 flight hours exception?"
+  expect: ["50 flight hours"]
+- id: q6
+  question: "What did AD 2023-07-02 cover?"
+  expect: ["AD 2023-07-02"]
+- id: q7
+  question: "What is procedure code MPP-DOCX-4401?"
+  expect: ["MPP-DOCX-4401"]
+- id: q8
+  question: "What is briefing code MPP-PPTX-4402?"
+  expect: ["MPP-PPTX-4402"]
+- id: q9
+  question: "Which serials from S1000 are affected?"
+  expect: ["S1000"]
+- id: q10
+  question: "Is a ferry flight permitted over the limit?"
+  expect: ["ferry flight"]
+- id: q11
+  question: "Can a missing placard be deferred under the MEL?"
+  expect: ["MEL"]
+- id: q12
+  question: "When is the side-stay inspected at C-check?"
+  expect: ["C-check"]
+- id: q13
+  question: "Is the bushing sold as a matched set?"
+  expect: ["matched set"]
+- id: q14
+  question: "Which component is life-limited?"
+  expect: ["life-limited"]
+- id: q15
+  question: "Does the directive apply to the narrow-body fleet?"
+  expect: ["narrow-body"]

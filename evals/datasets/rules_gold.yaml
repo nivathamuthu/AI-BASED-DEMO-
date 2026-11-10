@@ -1,0 +1,82 @@
+# Hand-written gold rules for the three synthetic documents, for the user to review.
+# Written from scripts/make_synthetic_docs.py before the rule extractor existed or ran.
+# Any later change to this file is listed in the change log at the bottom.
+#
+# A predicted rule matches a gold rule when it comes from the same document, every
+# `condition` keyword appears in its condition (or exception), and every `action`
+# keyword appears in its action. Matching is case-insensitive.
+#
+# The set is not exhaustive. The documents also state a few procedural instructions
+# (record the part number, quote the AD on the work order, the briefing's 12000 h and
+# 11000 h lines). A correct extraction of those counts against precision, so precision
+# is a lower bound. eval_rules lists every unmatched prediction so it can be judged.
+
+documents:
+  - airworthiness_directive_excerpt
+  - maintenance_planning_procedure
+  - maintenance_planning_briefing
+
+rules:
+  - id: g01
+    document: airworthiness_directive_excerpt
+    text: "IF part 65-45210-3 is installed (serials S1000-S1899) THEN AD 2023-14-09 applies to the narrow-body fleet."
+    condition: ["65-45210-3", "installed"]
+    action: ["applies"]
+  - id: g02
+    document: airworthiness_directive_excerpt
+    text: "IF accumulated flight hours on 65-45210-3 reach 12000 THEN replace the side-stay before that."
+    condition: ["12000"]
+    action: ["replace"]
+  - id: g03
+    document: airworthiness_directive_excerpt
+    text: "IF hours are already above 11000 THEN do the replacement at the next C-check."
+    condition: ["11000"]
+    action: ["c-check"]
+  - id: g04
+    document: airworthiness_directive_excerpt
+    text: "IF the part is over the limit THEN a ferry flight is not permitted."
+    condition: ["over the limit"]
+    action: ["not permitted"]
+  - id: g05
+    document: airworthiness_directive_excerpt
+    text: "IF PN-77-4418 is on order AND a detailed visual inspection shows no crack THEN the replacement may be deferred for 50 flight hours."
+    condition: ["on order"]
+    action: ["deferred", "50 flight hours"]
+  - id: g06
+    document: airworthiness_directive_excerpt
+    text: "IF AD 2023-07-02 is already open on the same gear THEN the 50 flight hour exception does not apply."
+    condition: ["AD 2023-07-02"]
+    action: ["does not apply"]
+  - id: g07
+    document: maintenance_planning_procedure
+    text: "IF 65-45210-3 is installed AND flight hours >= 12000 THEN replace it with PN-77-4418 before the next revenue flight; exception 50 flight hours when on order and no crack."
+    condition: ["65-45210-3", "12000"]
+    action: ["replace", "PN-77-4418"]
+  - id: g08
+    document: maintenance_planning_procedure
+    text: "At every C-check, do a detailed visual inspection of the side-stay."
+    condition: ["c-check"]
+    action: ["inspection"]
+  - id: g09
+    document: maintenance_planning_procedure
+    text: "IF a crack of any length is found THEN the exception in section 2.1 is closed."
+    condition: ["crack"]
+    action: ["closes the exception"]
+  - id: g10
+    document: maintenance_planning_procedure
+    text: "A missing non-essential placard may be deferred under the MEL."
+    condition: ["placard"]
+    action: ["deferred under the mel"]
+  - id: g11
+    document: maintenance_planning_procedure
+    text: "The side-stay replacement cannot be deferred under the MEL."
+    condition: ["side-stay replacement"]
+    action: ["cannot be deferred"]
+  - id: g12
+    document: maintenance_planning_briefing
+    text: "The 50 flight hour exception applies only while the replacement is on order."
+    condition: ["on order"]
+    action: ["50 flight hour"]
+
+# Change log
+# - (none yet)

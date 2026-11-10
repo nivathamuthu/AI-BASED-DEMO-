@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Prompts · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>2 · Prompts</h1>
+<p class="muted">v1 is a one-line prompt. v2 names the role, the rules, the schema and two examples, and it must say unknown when the chunk does not contain the answer. Run <span class="mono">python manage.py eval_prompts</span>.</p>
+{% if not run %}
+<p class="card">No eval yet.</p>
+{% else %}
+<div class="card">
+  <strong>v1 {{ run.metrics.v1 }}</strong> · <strong>v2 {{ run.metrics.v2 }}</strong>
+  <div class="muted">LLM {{ run.llm_provider }} / {{ run.llm_model }} · embeddings {{ run.embeddings_provider }} / {{ run.embeddings_model }} · {{ run.created_at }}</div>
+</div>
+<table>
+  <thead>
+    <tr><th>Sample</th><th>v1</th><th>v2</th></tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td><span class="mono">{{ row.id }}</span><div class="muted">{{ row.question }}</div></td>
+      <td>
+        <span class="badge {% if row.v1.score %}done{% else %}failed{% endif %}">{{ row.v1.score }}</span>
+        {% include "prompts/_output.html" with output=row.v1.output %}
+      </td>
+      <td>
+        <span class="badge {% if row.v2.score %}done{% else %}failed{% endif %}">{{ row.v2.score }}</span>
+        {% include "prompts/_output.html" with output=row.v2.output %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

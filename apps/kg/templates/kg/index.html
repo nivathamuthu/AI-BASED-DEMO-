@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Knowledge graph · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>4 · Knowledge graph</h1>
+<p class="muted">Entities and relations are extracted per chunk, merged by normalized name and alias, and stored with the chunk, document and page they came from. Click a node to see its sources.</p>
+
+{% if build %}
+<div class="card">
+  <strong>{{ build.node_count }}</strong> nodes ·
+  <strong>{{ build.edge_count }}</strong> edges ·
+  <strong>{{ build.merged_count }}</strong> merged duplicates ·
+  <strong>{{ build.dropped_count }}</strong> dropped relations
+  <div class="muted">Backend {{ build.backend }} · extraction prompt {{ build.prompt_version }} · {{ build.chunk_count }} chunks · built {{ build.created_at }}</div>
+</div>
+{% else %}
+<p class="card">No graph yet. Run <span class="mono">python manage.py build_graph --extract</span>, or upload a document.</p>
+{% endif %}
+{% if error %}<ul class="messages"><li class="error">{{ error }}</li></ul>{% endif %}
+
+<form class="card" method="get">
+  {% for kind in types %}
+  <label><input type="checkbox" name="type" value="{{ kind }}" {% if kind in selected %}checked{% endif %}> {{ kind }}</label>
+  {% endfor %}
+  <button type="submit">Filter</button>
+  {% if selected %}<a href="{% url 'kg:index' %}">all types</a>{% endif %}
+</form>
+
+<div style="display:grid; grid-template-columns: 2fr 1fr; gap:16px;">
+  <iframe id="kg-frame" src="{% url 'kg:graph' %}{% if type_query %}?{{ type_query }}{% endif %}" style="width:100%; height:640px; border:1px solid var(--line); border-radius:8px; background:#fff;"></iframe>
+  <div id="node-panel" class="card" style="max-height:640px; overflow:auto;"><p class="muted">Click a node.</p></div>
+</div>
+
+<h2>GraphRAG</h2>
+{% if latest_eval %}
+<p class="card">Last eval · LLM {{ latest_eval.llm_provider }} / {{ latest_eval.llm_model }} · embeddings {{ latest_eval.embeddings_provider }} / {{ latest_eval.embeddings_model }} · hybrid {{ latest_eval.metrics.hybrid }} · GraphRAG {{ latest_eval.metrics.graphrag }}</p>
+{% endif %}
+<form class="card" method="post">
+  {% csrf_token %}
+  <input type="text" name="question" value="{{ result.question|default:'' }}" size="80" placeholder="Which tasks are governed by AD 2023-14-09 for part 65-45210-3?" required>
+  <button type="submit">Ask</button>
+</form>
+
+{% if result %}
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+  <div class="card">
+    <span class="badge {% if result.known %}done{% else %}failed{% endif %}">GraphRAG</span>
+    <p>{{ result.answer }}</p>
+    {% for citation in result.citations %}<span class="tag">{{ citation }}</span>{% endfor %}
+  </div>
+  <div class="card">
+    <span class="badge {% if plain.known %}done{% else %}failed{% endif %}">Hybrid only</span>
+    <p>{{ plain.answer }}</p>
+    {% for citation in plain.citations %}<span class="tag">{{ citation }}</span>{% endfor %}
+  </div>
+</div>
+
+<h2>Traversed path</h2>
+<p class="muted">Matched entities:
+  {% for seed in result.seeds %}<span class="tag">{{ seed.name }} · {{ seed.type }} · {{ seed.reason }}</span>{% empty %}none{% endfor %}
+</p>
+<table>
+  <thead><tr><th>Hop</th><th>Fact</th><th>Used</th><th>Source</th></tr></thead>
+  <tbody>
+    {% for fact in result.facts %}
+    <tr>
+      <td class="mono">{{ fact.hop }}</td>
+      <td>{{ fact.source }} <span class="muted">({{ fact.source_type }})</span> <span class="mono">-{{ fact.relation }}-&gt;</span> {{ fact.target }} <span class="muted">({{ fact.target_type }})</span></td>
+      <td>{% if fact in result.path %}<span class="badge done">used</span>{% endif %}</td>
+      <td><span class="tag">{{ fact.citation }}</span></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="4" class="muted">No graph facts. The answer used hybrid retrieval only.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<script>
+window.addEventListener("message", function (event) {
+  if (event.origin === window.location.origin && event.data && event.data.kgNode) {
+    htmx.ajax("GET", "{% url 'kg:node' %}?id=" + encodeURIComponent(event.data.kgNode), {target: "#node-panel"});
+  }
+});
+</script>
+{% endblock %}

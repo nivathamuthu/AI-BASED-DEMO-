@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}RAG · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>3 · Hybrid retrieval</h1>
+<p class="muted">BM25 and pgvector, merged with reciprocal rank fusion. Hybrid+rerank uses a lexical rerank unless <span class="mono">RERANK_ENABLED=true</span> and the image was built with the ML extra.</p>
+{% if latest_eval %}
+<p class="card">Last hit@5 · LLM {{ latest_eval.llm_provider }} / {{ latest_eval.llm_model }} · embeddings {{ latest_eval.embeddings_provider }} / {{ latest_eval.embeddings_model }}
+  {% for name, score in latest_eval.metrics.hit_at_k.items %} · {{ name }} {{ score }}{% endfor %}
+</p>
+{% endif %}
+<form class="card" method="post">
+  {% csrf_token %}
+  <p>
+    <input type="text" name="question" value="{{ result.question|default:'' }}" placeholder="Ask about a part number or an AD" size="70" required>
+    <button type="submit">Ask</button>
+  </p>
+  <p>
+    {% for item in modes %}
+    <label><input type="radio" name="mode" value="{{ item }}" {% if item == mode %}checked{% endif %}> {{ item }}</label>
+    {% endfor %}
+  </p>
+</form>
+{% if result %}
+<div class="card">
+  <span class="badge {% if result.known %}done{% else %}failed{% endif %}">{% if result.known %}answered{% else %}abstained{% endif %}</span>
+  <span class="muted">{{ result.mode }}</span>
+  <p>{{ result.answer }}</p>
+  {% if result.citations %}
+  <p>{% for citation in result.citations %}<span class="tag">{{ citation }}</span>{% endfor %}</p>
+  {% endif %}
+</div>
+<h2>Retrieved chunks</h2>
+<table>
+  <thead><tr><th>Score</th><th>Source</th><th>Text</th></tr></thead>
+  <tbody>
+    {% for hit in result.hits %}
+    <tr>
+      <td class="mono">{{ hit.score|floatformat:4 }}</td>
+      <td>{{ hit.document }}{% if hit.page %}, p.{{ hit.page }}{% endif %}{% if hit.section %}<div class="muted">{{ hit.section }}</div>{% endif %}</td>
+      <td><pre class="chunk">{{ hit.text }}</pre></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="3" class="muted">Nothing retrieved.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

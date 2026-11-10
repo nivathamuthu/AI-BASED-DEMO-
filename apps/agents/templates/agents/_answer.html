@@ -1,0 +1,5 @@
+<p><span class="badge {% if answer.status == 'answered' %}done{% else %}running{% endif %}">{{ answer.status }}</span> {{ answer.answer }}</p>
+{% if answer.conflict_note %}<p class="muted">Conflict note: {{ answer.conflict_note }}</p>{% endif %}
+{% if answer.claims %}
+<ol>{% for claim in answer.claims %}<li>{{ claim.text }} <span class="tag">S{{ claim.source }}</span> <em class="muted">"{{ claim.quote }}"</em></li>{% endfor %}</ol>
+{% endif %}

@@ -1,0 +1,4 @@
+{% if llm.provider == "mock" %}
+<ul class="messages"><li class="warning">LLM_PROVIDER=mock. Classification, planning, drafting and the citation judge come from the offline stand-in, not a model.</li></ul>
+{% endif %}
+<p class="card">LLM <strong>{{ llm.provider }}</strong> / <span class="mono">{{ llm.model }}</span> · embeddings <strong>{{ embeddings.provider }}</strong> / <span class="mono">{{ embeddings.model }}</span> · retrieval <span class="mono">{{ retrieval_mode }}</span> · max loops {{ max_loops }} · checkpointer <span class="mono">PostgresSaver</span></p>

@@ -1,0 +1,16 @@
+- chunk: "IF flight hours are at least 12000, THEN replace the side-stay."
+  question: "Extract the rule."
+  output:
+    found: true
+    condition: "flight hours are at least 12000"
+    action: "replace the side-stay"
+    exception: ""
+    confidence: 0.9
+- chunk: "The planning office meets every Monday."
+  question: "Extract the rule."
+  output:
+    found: false
+    condition: ""
+    action: ""
+    exception: ""
+    confidence: 0.0

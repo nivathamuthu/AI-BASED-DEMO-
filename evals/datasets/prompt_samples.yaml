@@ -1,0 +1,78 @@
+# Ten samples drawn from the synthetic maintenance documents.
+# answerable / has_rule items keep a token that also appears in the chunk,
+# so a careful prompt can answer and a naive one still grabs the wrong sentence.
+- id: a1
+  task: answer_with_citations
+  answerable: true
+  expect: "PN-77-4418"
+  domain: aviation maintenance
+  question: "Which part replaces 65-45210-3?"
+  chunk: "The planning office reviews the fleet every Monday. Replace part 65-45210-3 with PN-77-4418 at 12000 flight hours."
+- id: a2
+  task: answer_with_citations
+  answerable: true
+  expect: "AD 2023-14-09"
+  domain: aviation maintenance
+  question: "Which directive governs the side-stay?"
+  chunk: "This page is the cover sheet for the training excerpt. Compliance is recorded against AD 2023-14-09 for the side-stay."
+- id: a3
+  task: answer_with_citations
+  answerable: true
+  expect: "50 flight hours"
+  domain: aviation maintenance
+  question: "How long can the replacement be deferred?"
+  chunk: "A ferry flight is not permitted under this excerpt. The replacement may be deferred for 50 flight hours when PN-77-4418 is on order."
+- id: a4
+  task: answer_with_citations
+  answerable: false
+  expect: ""
+  domain: aviation maintenance
+  question: "What torque in newton-metres is specified for the pin?"
+  chunk: "The side-stay is a life-limited component installed as part 65-45210-3."
+- id: a5
+  task: answer_with_citations
+  answerable: false
+  expect: ""
+  domain: aviation maintenance
+  question: "Who is the accountable manager that signed this directive?"
+  chunk: "Quote AD 2023-14-09 and PN-77-4418 together on the work order."
+- id: r1
+  task: extract_rule
+  has_rule: true
+  expect_condition: "12000"
+  expect_action: "PN-77-4418"
+  domain: aviation maintenance
+  question: "Extract the rule."
+  chunk: "IF part 65-45210-3 is installed AND flight hours are at least 12000, THEN replace it with PN-77-4418."
+- id: r2
+  task: extract_rule
+  has_rule: true
+  expect_condition: "on order"
+  expect_action: "wait"
+  domain: aviation maintenance
+  question: "Extract the rule."
+  chunk: "IF a crack is not found AND PN-77-4418 is on order, THEN the replacement may wait. Exception: 50 flight hours."
+- id: r3
+  task: extract_rule
+  has_rule: true
+  expect_condition: "placard"
+  expect_action: "MEL"
+  domain: aviation maintenance
+  question: "Extract the rule."
+  chunk: "IF the placard is missing AND it is non-essential, THEN it may be deferred under the MEL."
+- id: r4
+  task: extract_rule
+  has_rule: false
+  expect_condition: ""
+  expect_action: ""
+  domain: aviation maintenance
+  question: "Extract the rule."
+  chunk: "The planning office meets on Monday and files the work orders."
+- id: r5
+  task: extract_rule
+  has_rule: false
+  expect_condition: ""
+  expect_action: ""
+  domain: aviation maintenance
+  question: "Extract the rule."
+  chunk: "Slide four lists the related material for the briefing."

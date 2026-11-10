@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }} · Ingest{% endblock %}
+{% block content %}
+<p class="muted"><a href="{% url 'ingest:index' %}">← All documents</a></p>
+{% include "ingest/_detail.html" %}
+{% endblock %}

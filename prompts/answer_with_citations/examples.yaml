@@ -1,0 +1,12 @@
+- chunk: "Replace part 65-45210-3 with PN-77-4418 at 12000 flight hours."
+  question: "Which part replaces 65-45210-3?"
+  output:
+    answer: "Replace part 65-45210-3 with PN-77-4418 at 12000 flight hours."
+    known: true
+    citation_indexes: [1]
+- chunk: "The briefing describes the galley loading order."
+  question: "What torque in newton-metres is specified?"
+  output:
+    answer: "unknown"
+    known: false
+    citation_indexes: []

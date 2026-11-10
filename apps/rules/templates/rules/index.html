@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Rules · DocIntel Lab{% endblock %}
+{% block content %}
+<h1>5 · Business rules</h1>
+<p class="muted">Rules are extracted per chunk with prompt <span class="mono">extract_rules/{{ prompt_version }}</span>. A rule whose source quote is not in its chunk is dropped. Near-duplicates are merged, and an LLM judge checks candidate pairs for contradictions.</p>
+
+{% if llm.provider == "mock" %}
+<ul class="messages"><li class="warning">LLM_PROVIDER=mock. These rules and conflict verdicts come from the offline stand-in, not a model. Set LLM_PROVIDER=anthropic or openai for real extraction.</li></ul>
+{% endif %}
+<p class="card">LLM <strong>{{ llm.provider }}</strong> / <span class="mono">{{ llm.model }}</span> · embeddings <strong>{{ embeddings.provider }}</strong> / <span class="mono">{{ embeddings.model }}</span>
+{% if run %}<br><span class="muted">Last run {{ run.created_at }} · prompt {{ run.prompt_version }} · LLM {{ run.llm_provider }} / {{ run.llm_model }} · {{ run.stats.extraction.ran }} chunks sent to the model, {{ run.stats.extraction.skipped }} cached{% if run.stats.extraction.failed %}, {{ run.stats.extraction.failed }} failed validation{% endif %}</span>{% endif %}</p>
+
+<div class="card">
+  <strong>{{ counts.extracted }}</strong> rules extracted ·
+  <strong>{{ counts.dropped }}</strong> dropped (quote not found) ·
+  <strong>{{ counts.merged }}</strong> merged ·
+  <strong>{{ counts.conflicts }}</strong> conflicts ·
+  <strong>{{ counts.approved }}</strong> approved
+  <span class="muted">· {{ counts.pending }} pending · {{ counts.rejected }} rejected · {{ counts.retired }} retired</span>
+  <div style="margin-top:10px; display:flex; gap:8px; align-items:center;">
+    <form method="post" action="{% url 'rules:extract' %}" style="display:inline">
+      {% csrf_token %}
+      <button type="submit">Extract rules</button>
+      <label class="muted"><input type="checkbox" name="force" value="1"> re-run unchanged chunks</label>
+    </form>
+    <a class="btn" href="{% url 'rules:export' 'json' %}">Export approved · JSON</a>
+    <a class="btn" href="{% url 'rules:export' 'csv' %}">Export approved · CSV</a>
+  </div>
+</div>
+
+{% if latest_eval %}
+<p class="card">Last eval · LLM {{ latest_eval.llm_provider }} / {{ latest_eval.llm_model }}
+{% for version, row in latest_eval.metrics.items %} · {{ version }} precision {{ row.precision }}, recall {{ row.recall }}{% endfor %}</p>
+{% endif %}
+
+{% if conflicts %}
+<h2>Conflicts</h2>
+<table>
+  <thead><tr><th>Label</th><th>Rules</th><th>Kind</th><th>Reason</th><th>Judge</th></tr></thead>
+  <tbody>
+  {% for conflict in conflicts %}
+    <tr>
+      <td><span class="badge {% if conflict.display_severity == 'high' %}failed{% else %}running{% endif %}">{{ conflict.display_label }}</span> <span class="muted">{{ conflict.display_severity }}</span></td>
+      <td class="mono"><a href="{% url 'rules:detail' conflict.rule_a.key %}">{{ conflict.rule_a.key }}</a> vs <a href="{% url 'rules:detail' conflict.rule_b.key %}">{{ conflict.rule_b.key }}</a><br><span class="muted">{{ conflict.rule_a.document.title }} / {{ conflict.rule_b.document.title }}</span></td>
+      <td>{{ conflict.kind }}</td>
+      <td>{{ conflict.reason }}</td>
+      <td class="mono">{{ conflict.llm_provider }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if has_possible_conflict %}<p class="muted">A C-check deferral against a hard replacement limit is labeled possible conflict (medium). Two different hard limits stay high. The stored judge verdict is unchanged.</p>{% endif %}
+{% endif %}
+
+<h2>Rules</h2>
+<form class="card" method="get">
+  <label>Status
+    <select name="status">{% for choice in status_choices %}<option value="{{ choice }}" {% if choice == status %}selected{% endif %}>{{ choice }}</option>{% endfor %}</select>
+  </label>
+  <label>Document
+    <select name="document"><option value="">all</option>{% for document in documents %}<option value="{{ document.id }}" {% if document_id == document.id|stringformat:"s" %}selected{% endif %}>{{ document.title }}</option>{% endfor %}</select>
+  </label>
+  <label>Min confidence <input type="number" name="min_confidence" step="0.05" min="0" max="1" value="{{ min_confidence }}" style="width:5em"></label>
+  <button type="submit">Filter</button>
+</form>
+<table>
+  <thead><tr><th>Key</th><th>Condition</th><th>Action</th><th>Exception</th><th>Source</th><th>Conf.</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for rule in rules %}
+    <tr>
+      <td class="mono"><a href="{% url 'rules:detail' rule.key %}">{{ rule.key }}</a>
+        {% if rule.conflict_label %}<br><span class="badge {% if rule.conflict_label == 'conflict' %}failed{% else %}running{% endif %}">{{ rule.conflict_label }}</span>{% endif %}</td>
+      <td>{{ rule.condition }}</td>
+      <td>{{ rule.action }}</td>
+      <td>{{ rule.exception|default:"" }}</td>
+      <td><span class="tag">{{ rule.document.title }}{% if rule.page %}, p.{{ rule.page }}{% endif %}</span></td>
+      <td class="mono">{{ rule.confidence|floatformat:2 }}</td>
+      <td><span class="badge {% if rule.status == 'approved' %}done{% elif rule.status == 'rejected' %}failed{% else %}pending{% endif %}">{{ rule.status }}</span>
+        {% if rule.merged_into %}<br><span class="muted">into <a href="{% url 'rules:detail' rule.merged_into.key %}">{{ rule.merged_into.key }}</a></span>{% endif %}
+        {% if rule.edited %}<br><span class="tag">edited</span>{% endif %}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="7" class="muted">No rules match. Click "Extract rules", or run <span class="mono">.\make.ps1 extract-rules</span>.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if run.merge_log %}
+<h2>Merge log (last run)</h2>
+<table>
+  <thead><tr><th>Rule</th><th>Merged into</th><th>Reason</th><th>Documents</th></tr></thead>
+  <tbody>
+  {% for entry in run.merge_log %}
+    <tr><td class="mono">{{ entry.rule }}</td><td class="mono">{{ entry.into }}</td><td>{{ entry.reason }}</td><td class="muted">{{ entry.documents|join:" / " }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

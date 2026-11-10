@@ -14,14 +14,15 @@ Pitch line: *"I'm a Django developer who also turns documents into knowledge, ru
 The app, the Celery worker, Postgres, Redis, Neo4j and the tests all run in Docker. There is no host virtualenv. `.\make.ps1` is the task runner. It creates `.env` from `.env.example` on the first `up`.
 
 ```powershell
-.\make.ps1 up        # build, start web + worker + postgres + redis + neo4j, migrate
-.\make.ps1 test      # pytest inside the web container
-.\make.ps1 demo      # synthetic PDF, DOCX and PPTX, then ingest them
+.\make.ps1 up          # build, start web + worker + postgres + redis + neo4j, migrate
+.\make.ps1 test        # pytest inside the web container
+.\make.ps1 demo        # synthetic PDF, DOCX and PPTX, then ingest them
+.\make.ps1 demo-reset  # wipe documents, rules, graph and agent runs, then rebuild the 4 corpus documents with the configured providers (eval runs are kept)
 ```
 
-Then open http://localhost:8010/ingest/
+Then open http://localhost:8010/. The landing page lists the modules, the active LLM and embeddings, and links to each one. `/results/` shows the latest saved eval for each module with its provider, model and date.
 
-`LLM_PROVIDER=mock` and `EMBEDDINGS_PROVIDER=mock` are the defaults, so this works with no API key. The worker uses Celery's prefork pool. Code is bind-mounted: edit a file and the dev server reloads; restart the worker (`docker compose restart worker`) after changing task code. Rebuild the image only when `requirements/` changes.
+`LLM_PROVIDER=mock` and `EMBEDDINGS_PROVIDER=mock` are the defaults, so this works with no API key. `demo-reset` refuses to run with a mock provider, because its output would not be real. The worker uses Celery's prefork pool. Code is bind-mounted: edit a file and the dev server reloads; restart the worker (`docker compose restart worker`) after changing task code. Rebuild the image only when `requirements/` changes.
 
 Equivalent commands without the script:
 
@@ -78,6 +79,23 @@ docintel-lab/
 ```
 
 ---
+
+## Status
+
+| Module | Name | Status | Page |
+|---|---|---|---|
+| 1 | Ingest pipeline | Built | http://localhost:8010/ingest/ |
+| 2 | Prompt library | Built | http://localhost:8010/prompts/ |
+| 3 | Hybrid RAG | Built | http://localhost:8010/rag/ |
+| 4 | Knowledge graph + GraphRAG | Built | http://localhost:8010/kg/ |
+| 5 | Business rules | Built | http://localhost:8010/rules/ |
+| 6 | Q&A generation + evaluation set | Planned, not built | (none) |
+| 7 | Rules to code | Planned, not built | (none) |
+| 8 | Compliance agent (LangGraph) | Built | http://localhost:8010/agents/ |
+
+The specs for Modules 6 and 7 below are the plan. They are not in the code yet.
+
+For the recording order, with the exact URL, question and number for each clip, see `docs/DEMO_ORDER.md`.
 
 ## Modules (build in this order)
 
@@ -279,6 +297,8 @@ The synthetic corpus includes `engineering_order_EO-2291.docx`, a one-paragraph 
 
 http://localhost:8010/rules/ shows the counts (extracted, dropped because the quote was not found, merged, conflicts, approved), the LLM and embedding provider and model, a banner when the LLM is the mock, the conflicts, the rules table with status, document and confidence filters, and the merge log. "Extract rules" queues the same pipeline on the worker. A rule's page highlights the quote inside the full chunk text and has Approve, Reject (with a reviewer note) and Edit. An edit keeps the original wording. `/rules/export.json` and `/rules/export.csv` export approved rules with their source and model.
 
+Conflict labels. The judge's stored verdict is never edited. For display only, a pair where one rule defers a job to the next C-check and the other is a hard replacement limit (R-0005 vs R-0006 on the current corpus) is labeled **possible conflict**, severity **medium**. Two different hard limits, such as 11500 vs 12000, stay **conflict**, severity **high**. The rule is in `apps/rules/services/present.py`.
+
 `eval_rules` scores v1 and v2 against the 12 hand-written rules in `evals/datasets/rules_gold.yaml` (precision = matched / kept, recall = matched / 12). The report names the LLM and lists every unmatched prediction, since the gold set is not exhaustive. The talk track is `docs/demo_scripts/m5.md`.
 
 ## Module 8: Compliance agent (LangGraph)
@@ -311,6 +331,3 @@ http://localhost:8010/agents/ has the question box, the provider and model, and 
 ```
 
 `eval_agent` runs the 6 cases in `evals/datasets/agent_cases.yaml` (2 lookups, 2 compliance checks, the 11500 vs 12000 conflict, 1 out of scope), approves every paused run itself, and reports per case: intent correct, answer correct (required strings), citations verified, conflict surfaced, loops used. The report names the LLM and is saved to `EvalRun` and `evals/results/`. The talk track is `docs/demo_scripts/m8.md`.
-
-#   A I - B A S E D - D E M O -  
- 

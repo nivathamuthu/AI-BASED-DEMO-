@@ -1,0 +1,17 @@
+<h2 style="margin-top:0">{{ node.name }}</h2>
+<p><span class="badge">{{ node.type }}</span>
+  {% for alias in node.aliases %}<span class="tag">{{ alias }}</span>{% endfor %}</p>
+<h3>Relations</h3>
+<ul>
+  {% for rel in relations %}
+  <li>{{ rel.source }} <span class="mono">-{{ rel.relation }}-&gt;</span> {{ rel.target }}</li>
+  {% empty %}<li class="muted">None.</li>{% endfor %}
+</ul>
+<h3>Source chunks</h3>
+{% for source in sources %}
+<div style="margin-bottom:10px">
+  <span class="tag">{{ source.document }}{% if source.page %}, p.{{ source.page }}{% endif %}{% if source.section %}, § {{ source.section }}{% endif %}</span>
+  <span class="muted mono">chunk {{ source.chunk_id }}</span>
+  <pre class="chunk">{{ source.text }}</pre>
+</div>
+{% empty %}<p class="muted">No source chunks.</p>{% endfor %}

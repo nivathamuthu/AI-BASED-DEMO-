@@ -1,0 +1,62 @@
+<div id="detail" {% if document.status == "queued" or document.status == "running" %}hx-get="{% url 'ingest:detail' document.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <h1>{{ document.title }}</h1>
+  <p class="muted">
+    <span class="badge {{ document.status }}">{{ document.get_status_display }}</span>
+    {{ document.original_name }} · {{ document.file_type|default:"type pending" }}
+    · {{ document.page_count|default:"?" }} pages · {{ document.chunk_count }} chunks
+    · <span class="mono">{{ document.sha256 }}</span>
+  </p>
+
+  {% if document.current_run %}
+  <h2>Stages <span class="muted">total {{ document.current_run.total_ms }} ms</span></h2>
+  {% if document.current_run.error %}<p class="badge failed">{{ document.current_run.error }}</p>{% endif %}
+  <table>
+    <thead>
+      <tr><th>Stage</th><th>Status</th><th>Attempts</th><th>Time</th><th>Summary</th></tr>
+    </thead>
+    <tbody>
+      {% for stage in document.current_run.stage_list %}
+      <tr>
+        <td>{{ stage.name }}</td>
+        <td><span class="badge {{ stage.status }}">{{ stage.get_status_display }}</span></td>
+        <td>{{ stage.attempts }}</td>
+        <td>{% if stage.duration_ms %}{{ stage.duration_ms }} ms{% else %}—{% endif %}</td>
+        <td>
+          {% if stage.error %}<span class="badge failed">{{ stage.error }}</span>{% endif %}
+          <span class="mono muted">{{ stage.summary }}</span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <form method="post" action="{% url 'ingest:reprocess' document.pk %}" style="margin: 12px 0;">
+    {% csrf_token %}
+    <button type="submit" {% if document.status == "queued" or document.status == "running" %}disabled{% endif %}>Reprocess</button>
+    <span class="muted">Runs every stage again and replaces the chunks. The file hash stays the same.</span>
+  </form>
+
+  <h2>Chunks</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Page</th><th>Section</th><th>Tokens</th><th>Text</th></tr>
+    </thead>
+    <tbody>
+      {% for chunk in document.chunk_list %}
+      <tr>
+        <td>{{ chunk.ordinal }}</td>
+        <td>{% if chunk.page_start %}{{ chunk.page_start }}{% if chunk.page_end != chunk.page_start %}–{{ chunk.page_end }}{% endif %}{% else %}—{% endif %}</td>
+        <td>{{ chunk.section_path|default:"—" }}</td>
+        <td>{{ chunk.token_count }}</td>
+        <td>
+          {% for item in chunk.metadata.identifiers %}<span class="tag">{{ item.kind }} {{ item.value }}</span>{% endfor %}
+          <pre class="chunk">{{ chunk.text }}</pre>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="muted">Chunks appear here when the index stage finishes.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
